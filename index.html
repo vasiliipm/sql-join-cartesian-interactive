@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL JOIN Visualizer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #ffffff;
+    color: #1f2937;
+    line-height: 1.5;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* --- Input section --- */
+  .input-section {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .table-input {
+    flex: 1;
+    min-width: 220px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .table-input h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .table-input h2 span {
+    background: #f3f4f6;
+    border-radius: 4px;
+    padding: 0.1rem 0.5rem;
+    font-family: monospace;
+    font-size: 0.85rem;
+  }
+
+  .row-count-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .row-count-control label {
+    color: #6b7280;
+  }
+
+  .row-count-control select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background: #fff;
+  }
+
+  .id-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .id-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .id-row .row-label {
+    color: #9ca3af;
+    font-size: 0.75rem;
+    width: 1.5rem;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .id-row input {
+    width: 60px;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  .id-row input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  }
+
+  /* --- Controls --- */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .controls select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background: #fff;
+  }
+
+  button {
+    padding: 0.5rem 1.25rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-primary {
+    background: #2563eb;
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: #1d4ed8;
+  }
+
+  .btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+  }
+
+  .btn-secondary:hover {
+    background: #e5e7eb;
+  }
+
+  /* --- Grid section --- */
+  .grid-section {
+    margin-bottom: 2rem;
+    overflow-x: auto;
+  }
+
+  .grid-container {
+    display: inline-grid;
+    gap: 0;
+    border-radius: 4px;
+  }
+
+  .grid-cell {
+    width: 64px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-family: monospace;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+
+  .grid-cell:hover {
+    background: #f9fafb;
+  }
+
+  .grid-cell.header-corner {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    font-weight: 600;
+    font-size: 0.7rem;
+    color: #9ca3af;
+  }
+
+  .grid-cell.header-t1 {
+    background: #f0f9ff;
+    font-weight: 600;
+    color: #1e40af;
+    border-color: #bfdbfe;
+  }
+
+  .grid-cell.header-t2 {
+    background: #f0f9ff;
+    font-weight: 600;
+    color: #1e40af;
+    border-color: #bfdbfe;
+  }
+
+  .grid-cell.matched {
+    background: #dbeafe;
+    border: 2px solid #2563eb;
+    color: #1e3a8a;
+    font-weight: 600;
+  }
+
+  .grid-cell.matched:hover {
+    background: #bfdbfe;
+  }
+
+  .grid-cell.null-pair {
+    background: #fef3c7;
+    border: 2px dashed #f59e0b;
+    color: #92400e;
+    font-weight: 600;
+  }
+
+  .grid-cell.null-pair:hover {
+    background: #fde68a;
+  }
+
+  .grid-cell.null-hidden {
+    visibility: hidden;
+    border: none;
+  }
+
+  /* --- Result section --- */
+  .result-section {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .sql-block {
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .sql-block h3, .result-table-block h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .sql-block pre {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 1rem;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    color: #334155;
+  }
+
+  .result-table-block {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .result-table th {
+    background: #f0f9ff;
+    color: #1e40af;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    border: 1px solid #bfdbfe;
+    font-weight: 600;
+  }
+
+  .result-table td {
+    padding: 0.4rem 1rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .result-table tr:nth-child(even) td {
+    background: #f9fafb;
+  }
+
+  .result-table td.null-value {
+    color: #f59e0b;
+    font-style: italic;
+  }
+
+  .empty-state {
+    color: #9ca3af;
+    font-style: italic;
+    padding: 2rem 0;
+    text-align: center;
+  }
+
+  .result-count {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+
+  /* --- Legend --- */
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .legend-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .legend-swatch.matched {
+    background: #dbeafe;
+    border: 2px solid #2563eb;
+  }
+
+  .legend-swatch.null-pair {
+    background: #fef3c7;
+    border: 2px dashed #f59e0b;
+  }
+
+  .legend-swatch.regular {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+  }
+</style>
+</head>
+<body>
+
+<h1>SQL JOIN Visualizer</h1>
+<p class="subtitle">Every JOIN is a subset of the Cartesian product. See which pairs make it through.</p>
+
+<div class="input-section">
+  <div class="table-input" id="table-t1">
+    <h2><span>T1</span> Left Table</h2>
+    <div class="row-count-control">
+      <label for="count-t1">Rows:</label>
+      <select id="count-t1"></select>
+    </div>
+    <div class="id-inputs" id="inputs-t1"></div>
+  </div>
+  <div class="table-input" id="table-t2">
+    <h2><span>T2</span> Right Table</h2>
+    <div class="row-count-control">
+      <label for="count-t2">Rows:</label>
+      <select id="count-t2"></select>
+    </div>
+    <div class="id-inputs" id="inputs-t2"></div>
+  </div>
+</div>
+
+<div class="controls">
+  <select id="join-type">
+    <option value="INNER JOIN">INNER JOIN</option>
+    <option value="LEFT JOIN">LEFT JOIN</option>
+    <option value="RIGHT JOIN">RIGHT JOIN</option>
+    <option value="FULL OUTER JOIN">FULL OUTER JOIN</option>
+    <option value="CROSS JOIN">CROSS JOIN</option>
+  </select>
+  <button class="btn-primary" id="btn-join">Join</button>
+  <button class="btn-secondary" id="btn-randomize">Randomize</button>
+</div>
+
+<div class="grid-section">
+  <div class="legend" id="legend" style="display:none;">
+    <div class="legend-item">
+      <div class="legend-swatch regular"></div>
+      Cartesian pair
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch matched"></div>
+      In JOIN result
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch null-pair"></div>
+      NULL pair (unmatched)
+    </div>
+  </div>
+  <div class="grid-container" id="grid"></div>
+</div>
+
+<div class="result-section" id="result-section" style="display:none;">
+  <div class="sql-block">
+    <h3>SQL Query</h3>
+    <pre id="sql-output"></pre>
+    <h3 style="margin-top:1rem;">Equivalent via CROSS JOIN</h3>
+    <pre id="sql-cross-equiv"></pre>
+  </div>
+  <div class="result-table-block">
+    <h3>Result</h3>
+    <div class="result-count" id="result-count"></div>
+    <table class="result-table" id="result-table">
+      <thead><tr><th>t1.id</th><th>t2.id</th></tr></thead>
+      <tbody id="result-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="empty-state" id="empty-state">Configure tables above and press <strong>Join</strong> to visualize.</div>
+
+<script>
+  // ---- Init ----
+  function init() {
+    const countT1 = document.getElementById('count-t1');
+    const countT2 = document.getElementById('count-t2');
+
+    for (let i = 1; i <= 10; i++) {
+      countT1.appendChild(new Option(i, i));
+      countT2.appendChild(new Option(i, i));
+    }
+    countT1.value = 3;
+    countT2.value = 3;
+
+    renderInputRows('t1', 3);
+    renderInputRows('t2', 3);
+
+    countT1.addEventListener('change', () => renderInputRows('t1', +countT1.value));
+    countT2.addEventListener('change', () => renderInputRows('t2', +countT2.value));
+
+    document.getElementById('btn-join').addEventListener('click', doJoin);
+    document.getElementById('btn-randomize').addEventListener('click', randomize);
+  }
+
+  // ---- Input row rendering ----
+  function renderInputRows(tableId, count) {
+    const container = document.getElementById('inputs-' + tableId);
+    const existing = container.querySelectorAll('input');
+    const oldValues = [];
+    existing.forEach(inp => oldValues.push(inp.value));
+
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const row = document.createElement('div');
+      row.className = 'id-row';
+
+      const label = document.createElement('span');
+      label.className = 'row-label';
+      label.textContent = (i + 1) + '.';
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = 1;
+      input.max = 10;
+      input.value = i < oldValues.length && oldValues[i] !== '' ? oldValues[i] : 1;
+      input.dataset.table = tableId;
+      input.dataset.index = i;
+
+      row.appendChild(label);
+      row.appendChild(input);
+      container.appendChild(row);
+    }
+  }
+
+  // ---- Read values ----
+  function readTableValues(tableId) {
+    const inputs = document.querySelectorAll('#inputs-' + tableId + ' input');
+    const values = [];
+    inputs.forEach(inp => {
+      let v = parseInt(inp.value, 10);
+      if (isNaN(v) || v < 1) v = 1;
+      if (v > 10) v = 10;
+      inp.value = v;
+      values.push(v);
+    });
+    return values;
+  }
+
+  // ---- Randomize ----
+  function randomize() {
+    const c1 = Math.floor(Math.random() * 5) + 2; // 2–6
+    const c2 = Math.floor(Math.random() * 5) + 2;
+
+    document.getElementById('count-t1').value = c1;
+    document.getElementById('count-t2').value = c2;
+
+    renderInputRows('t1', c1);
+    renderInputRows('t2', c2);
+
+    const vals1 = Array.from({ length: c1 }, () => Math.floor(Math.random() * 10) + 1).sort((a, b) => a - b);
+    const vals2 = Array.from({ length: c2 }, () => Math.floor(Math.random() * 10) + 1).sort((a, b) => a - b);
+
+    document.querySelectorAll('#inputs-t1 input').forEach((inp, i) => { inp.value = vals1[i]; });
+    document.querySelectorAll('#inputs-t2 input').forEach((inp, i) => { inp.value = vals2[i]; });
+  }
+
+  // ---- Compute JOIN ----
+  function computeJoin(t1, t2, joinType) {
+    const result = [];
+    // matchMatrix[i][j] = true if this pair is in the result
+    const matchMatrix = Array.from({ length: t1.length }, () => Array(t2.length).fill(false));
+    const matchedT1 = new Set();
+    const matchedT2 = new Set();
+
+    if (joinType === 'CROSS JOIN') {
+      for (let i = 0; i < t1.length; i++) {
+        for (let j = 0; j < t2.length; j++) {
+          matchMatrix[i][j] = true;
+          result.push({ t1: t1[i], t2: t2[j] });
+        }
+      }
+      return { result, matchMatrix, unmatchedT1: [], unmatchedT2: [] };
+    }
+
+    // Find matches (INNER)
+    for (let i = 0; i < t1.length; i++) {
+      for (let j = 0; j < t2.length; j++) {
+        if (t1[i] === t2[j]) {
+          matchMatrix[i][j] = true;
+          matchedT1.add(i);
+          matchedT2.add(j);
+          result.push({ t1: t1[i], t2: t2[j] });
+        }
+      }
+    }
+
+    const unmatchedT1 = [];
+    const unmatchedT2 = [];
+
+    if (joinType === 'LEFT JOIN' || joinType === 'FULL OUTER JOIN') {
+      for (let i = 0; i < t1.length; i++) {
+        if (!matchedT1.has(i)) {
+          unmatchedT1.push(i);
+          result.push({ t1: t1[i], t2: null });
+        }
+      }
+    }
+
+    if (joinType === 'RIGHT JOIN' || joinType === 'FULL OUTER JOIN') {
+      for (let j = 0; j < t2.length; j++) {
+        if (!matchedT2.has(j)) {
+          unmatchedT2.push(j);
+          result.push({ t1: null, t2: t2[j] });
+        }
+      }
+    }
+
+    return { result, matchMatrix, unmatchedT1, unmatchedT2 };
+  }
+
+  // ---- Add cell helper ----
+  function addCell(container, text, row, col, classes) {
+    const cell = document.createElement('div');
+    cell.className = 'grid-cell ' + classes;
+    cell.style.gridRow = row;
+    cell.style.gridColumn = col;
+    cell.textContent = text;
+    container.appendChild(cell);
+    return cell;
+  }
+
+  // ---- Render grid ----
+  function renderGrid(t1, t2, joinData) {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+
+    const { matchMatrix, unmatchedT1, unmatchedT2 } = joinData;
+    const hasNullCol = unmatchedT1.length > 0;
+    const hasNullRow = unmatchedT2.length > 0;
+
+    const totalCols = t2.length + 1 + (hasNullCol ? 1 : 0);
+    const totalRows = t1.length + 1 + (hasNullRow ? 1 : 0);
+
+    grid.style.gridTemplateColumns = 'repeat(' + totalCols + ', 64px)';
+    grid.style.gridTemplateRows = 'repeat(' + totalRows + ', 40px)';
+
+    // Corner cell
+    addCell(grid, 'T1 \\ T2', 1, 1, 'header-corner');
+
+    // T2 column headers (row 1, cols 2..t2.length+1)
+    for (let j = 0; j < t2.length; j++) {
+      addCell(grid, t2[j], 1, j + 2, 'header-t2');
+    }
+
+    // NULL column header
+    if (hasNullCol) {
+      addCell(grid, 'NULL', 1, t2.length + 2, 'header-corner');
+    }
+
+    // T1 row headers + data cells
+    for (let i = 0; i < t1.length; i++) {
+      const gridRow = i + 2;
+      addCell(grid, t1[i], gridRow, 1, 'header-t1');
+
+      for (let j = 0; j < t2.length; j++) {
+        const gridCol = j + 2;
+        const text = '(' + t1[i] + ', ' + t2[j] + ')';
+        const cls = matchMatrix[i][j] ? 'matched' : '';
+        addCell(grid, text, gridRow, gridCol, cls);
+      }
+
+      // NULL pair in right column
+      if (hasNullCol) {
+        if (unmatchedT1.includes(i)) {
+          addCell(grid, '(' + t1[i] + ', NULL)', gridRow, t2.length + 2, 'null-pair');
+        } else {
+          addCell(grid, '', gridRow, t2.length + 2, 'null-hidden');
+        }
+      }
+    }
+
+    // NULL row at bottom
+    if (hasNullRow) {
+      const nullRow = t1.length + 2;
+      addCell(grid, 'NULL', nullRow, 1, 'header-corner');
+
+      for (let j = 0; j < t2.length; j++) {
+        if (unmatchedT2.includes(j)) {
+          addCell(grid, '(NULL, ' + t2[j] + ')', nullRow, j + 2, 'null-pair');
+        } else {
+          addCell(grid, '', nullRow, j + 2, 'null-hidden');
+        }
+      }
+
+      if (hasNullCol) {
+        addCell(grid, '', nullRow, t2.length + 2, 'null-hidden');
+      }
+    }
+
+    document.getElementById('legend').style.display = 'flex';
+  }
+
+  // ---- Generate SQL ----
+  function generateSQL(joinType) {
+    if (joinType === 'CROSS JOIN') {
+      return 'SELECT t1.id, t2.id\nFROM T1\nCROSS JOIN T2;';
+    }
+    return 'SELECT t1.id, t2.id\nFROM T1\n' + joinType + ' T2\n  ON t1.id = t2.id;';
+  }
+
+  // ---- Generate equivalent CROSS JOIN SQL ----
+  function generateCrossEquivSQL(joinType) {
+    const inner = 'SELECT t1.id, t2.id\nFROM T1\nCROSS JOIN T2\nWHERE t1.id = t2.id';
+
+    const unmatchedLeft =
+      'SELECT t1.id, NULL\nFROM T1\nWHERE t1.id NOT IN (SELECT t2.id FROM T2)';
+
+    const unmatchedRight =
+      'SELECT NULL, t2.id\nFROM T2\nWHERE t2.id NOT IN (SELECT t1.id FROM T1)';
+
+    if (joinType === 'CROSS JOIN') {
+      return 'SELECT t1.id, t2.id\nFROM T1\nCROSS JOIN T2;\n\n-- Already a CROSS JOIN, no filter needed.';
+    }
+    if (joinType === 'INNER JOIN') {
+      return inner + ';';
+    }
+    if (joinType === 'LEFT JOIN') {
+      return inner + '\n\nUNION ALL\n\n' + unmatchedLeft + ';';
+    }
+    if (joinType === 'RIGHT JOIN') {
+      return inner + '\n\nUNION ALL\n\n' + unmatchedRight + ';';
+    }
+    // FULL OUTER JOIN
+    return inner + '\n\nUNION ALL\n\n' + unmatchedLeft + '\n\nUNION ALL\n\n' + unmatchedRight + ';';
+  }
+
+  // ---- Render result table ----
+  function renderResult(result) {
+    const body = document.getElementById('result-body');
+    body.innerHTML = '';
+
+    result.forEach(row => {
+      const tr = document.createElement('tr');
+
+      const td1 = document.createElement('td');
+      if (row.t1 === null) {
+        td1.textContent = 'NULL';
+        td1.className = 'null-value';
+      } else {
+        td1.textContent = row.t1;
+      }
+
+      const td2 = document.createElement('td');
+      if (row.t2 === null) {
+        td2.textContent = 'NULL';
+        td2.className = 'null-value';
+      } else {
+        td2.textContent = row.t2;
+      }
+
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      body.appendChild(tr);
+    });
+
+    document.getElementById('result-count').textContent = result.length + ' row' + (result.length !== 1 ? 's' : '');
+  }
+
+  // ---- Main join action ----
+  function doJoin() {
+    const t1 = readTableValues('t1');
+    const t2 = readTableValues('t2');
+    const joinType = document.getElementById('join-type').value;
+
+    const joinData = computeJoin(t1, t2, joinType);
+
+    renderGrid(t1, t2, joinData);
+
+    document.getElementById('sql-output').textContent = generateSQL(joinType);
+    document.getElementById('sql-cross-equiv').textContent = generateCrossEquivSQL(joinType);
+    renderResult(joinData.result);
+
+    document.getElementById('result-section').style.display = 'flex';
+    document.getElementById('empty-state').style.display = 'none';
+  }
+
+  // ---- Start ----
+  init();
+</script>
+</body>
+</html>
