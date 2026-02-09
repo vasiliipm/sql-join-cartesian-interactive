@@ -392,7 +392,7 @@
     <option value="CROSS JOIN">CROSS JOIN</option>
   </select>
   <button class="btn-primary" id="btn-join">Join</button>
-  <button class="btn-secondary" id="btn-randomize">Randomize</button>
+  <button class="btn-secondary" id="btn-randomize">Randomize Values</button>
 </div>
 
 <div class="grid-section">
@@ -501,20 +501,14 @@
 
   // ---- Randomize ----
   function randomize() {
-    const c1 = Math.floor(Math.random() * 5) + 2; // 2–6
-    const c2 = Math.floor(Math.random() * 5) + 2;
+    const inputs1 = document.querySelectorAll('#inputs-t1 input');
+    const inputs2 = document.querySelectorAll('#inputs-t2 input');
 
-    document.getElementById('count-t1').value = c1;
-    document.getElementById('count-t2').value = c2;
+    const vals1 = Array.from({ length: inputs1.length }, () => Math.floor(Math.random() * 10) + 1).sort((a, b) => a - b);
+    const vals2 = Array.from({ length: inputs2.length }, () => Math.floor(Math.random() * 10) + 1).sort((a, b) => a - b);
 
-    renderInputRows('t1', c1);
-    renderInputRows('t2', c2);
-
-    const vals1 = Array.from({ length: c1 }, () => Math.floor(Math.random() * 10) + 1).sort((a, b) => a - b);
-    const vals2 = Array.from({ length: c2 }, () => Math.floor(Math.random() * 10) + 1).sort((a, b) => a - b);
-
-    document.querySelectorAll('#inputs-t1 input').forEach((inp, i) => { inp.value = vals1[i]; });
-    document.querySelectorAll('#inputs-t2 input').forEach((inp, i) => { inp.value = vals2[i]; });
+    inputs1.forEach((inp, i) => { inp.value = vals1[i]; });
+    inputs2.forEach((inp, i) => { inp.value = vals2[i]; });
   }
 
   // ---- Compute JOIN ----
